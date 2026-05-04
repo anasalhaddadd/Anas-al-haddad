@@ -6,7 +6,6 @@
 
 <style>
 
-/* ===== GLOBAL ===== */
 body {
     margin:0;
     font-family:Tahoma;
@@ -15,7 +14,7 @@ body {
     text-align:center;
 }
 
-/* ===== INTRO ===== */
+/* INTRO */
 #intro {
     position:fixed;
     width:100%;
@@ -41,17 +40,15 @@ body {
 input {
     padding:10px;
     margin:5px;
-    font-size:16px;
 }
 
 button {
     padding:12px 25px;
     font-size:18px;
     cursor:pointer;
-    margin-top:10px;
 }
 
-/* ===== GAME ===== */
+/* GAME */
 #game { display:none; }
 
 /* SCOREBOARD */
@@ -60,12 +57,18 @@ button {
     justify-content:space-around;
     background:#111;
     padding:15px;
+    border-bottom:3px solid gold;
 }
 
 .team {
     border:2px solid gold;
     padding:10px 20px;
     border-radius:10px;
+}
+
+.team span {
+    font-weight:bold;
+    font-size:22px;
 }
 
 .active {
@@ -193,12 +196,13 @@ button {
 <div id="feedback"></div>
 
 <!-- SOUNDS -->
+<audio id="introSound" src="sounds/intro.mp3"></audio>
+<audio id="bgSound" src="sounds/bg.mp3" loop></audio>
 <audio id="tickSound" src="sounds/tick.mp3"></audio>
 <audio id="correctSound" src="sounds/correct.mp3"></audio>
 <audio id="wrongSound" src="sounds/wrong.mp3"></audio>
 <audio id="timeoutSound" src="sounds/timeout.mp3"></audio>
 <audio id="winSound" src="sounds/win.mp3"></audio>
-<audio id="introSound" src="sounds/intro.mp3" autoplay></audio>
 
 <script>
 
@@ -217,8 +221,34 @@ fetch("questions.json")
     createGrid();
 });
 
+/* AUDIO FADE */
+function fadeAudio(audio, target, duration){
+    let step = (audio.volume - target) / (duration/50);
+    let interval = setInterval(()=>{
+        audio.volume -= step;
+        if((step>0 && audio.volume<=target) || (step<0 && audio.volume>=target)){
+            audio.volume = target;
+            clearInterval(interval);
+        }
+    },50);
+}
+
 /* START */
 function startGame(){
+
+    let intro = document.getElementById("introSound");
+    let bg = document.getElementById("bgSound");
+
+    intro.volume = 1;
+    intro.play();
+
+    setTimeout(()=>{
+        fadeAudio(intro, 0, 1000);
+        bg.volume = 0;
+        bg.play();
+        fadeAudio(bg, 0.5, 2000);
+    },1500);
+
     document.getElementById("intro").style.display="none";
     document.getElementById("game").style.display="block";
 
@@ -282,6 +312,8 @@ function openQuestion(i,box){
 
 /* TIMER */
 function startTimer(box){
+    let timerEl=document.getElementById("timer");
+
     timeLeft=60;
     timerEl.innerText=timeLeft;
     timerEl.classList.remove("danger");
@@ -291,7 +323,10 @@ function startTimer(box){
     timer=setInterval(()=>{
         timeLeft--;
         timerEl.innerText=timeLeft;
-        tickSound.play();
+
+        let tick=document.getElementById("tickSound");
+        tick.currentTime=0;
+        tick.play();
 
         if(timeLeft<=10) timerEl.classList.add("danger");
 
@@ -316,6 +351,7 @@ function timeUp(box){
     setTimeout(()=>feedback.style.display="none",2000);
 
     box.classList.add("used");
+    updateActiveTeam();
     checkEnd();
 }
 
@@ -342,10 +378,11 @@ function checkAnswer(sel,correct,box){
     setTimeout(()=>feedback.style.display="none",2000);
 
     box.classList.add("used");
+    updateActiveTeam();
     checkEnd();
 }
 
-/* NEXT TURN (MANUAL) */
+/* NEXT TURN */
 function nextTurn(){
     currentTeam=currentTeam%3+1;
     updateActiveTeam();
@@ -361,7 +398,7 @@ function updateActiveTeam(){
     if(current) current.classList.add("active");
 }
 
-/* END GAME */
+/* END */
 function checkEnd(){
     let used=document.querySelectorAll(".box.used").length;
     if(used===questions.length) showWinner();
