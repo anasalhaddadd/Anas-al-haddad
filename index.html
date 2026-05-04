@@ -2,74 +2,119 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title> المسابقة الثقافية </title>
+<title>المسابقة الثقافية</title>
 
 <style>
+
+/* ===== GLOBAL ===== */
 body {
-    font-family: "Tahoma";
-    background: linear-gradient(to bottom, #fff8e1, #fceabb);
+    margin: 0;
+    font-family: "Tahoma", sans-serif;
+    background: radial-gradient(circle at center, #1a1a2e, #0f0f1a);
+    color: white;
+}
+
+/* ===== HEADER ===== */
+header {
     text-align: center;
-    margin: 0;
+    font-size: 40px;
+    padding: 20px;
+    background: linear-gradient(to right, #caa64b, #f5d36a, #caa64b);
+    color: black;
+    font-weight: bold;
+    letter-spacing: 2px;
 }
 
-/* Header */
-h1 {
-    background: gold;
-    padding: 15px;
-    margin: 0;
-}
-
-/* Teams */
+/* ===== SCOREBOARD ===== */
 #scoreboard {
     display: flex;
     justify-content: space-around;
-    padding: 10px;
-    font-size: 20px;
-}
-
-/* Grid */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 20px;
-}
-
-.box {
-    background: white;
-    border: 2px solid gold;
-    padding: 30px;
+    padding: 15px;
     font-size: 22px;
-    cursor: pointer;
+    background: #111;
+    border-bottom: 2px solid gold;
+}
+
+.team {
+    padding: 10px 20px;
+    border: 2px solid gold;
     border-radius: 10px;
 }
 
+.active {
+    background: gold;
+    color: black;
+}
+
+/* ===== GRID ===== */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    padding: 30px;
+}
+
+.box {
+    background: #111;
+    border: 3px solid gold;
+    border-radius: 15px;
+    font-size: 30px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.box:hover {
+    transform: scale(1.1);
+    background: gold;
+    color: black;
+}
+
 .box.used {
-    background: #ccc;
+    background: #444;
+    color: #888;
+    border-color: #666;
     cursor: not-allowed;
 }
 
-/* Popup */
+/* ===== POPUP ===== */
 #popup {
     display: none;
     position: fixed;
-    top: 20%;
-    left: 20%;
-    width: 60%;
-    background: white;
-    border: 3px solid gold;
-    padding: 20px;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    background: #0f0f1a;
+    border: 4px solid gold;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 0 30px gold;
 }
 
+#question {
+    font-size: 30px;
+    margin-bottom: 20px;
+}
+
+/* ANSWERS */
 .answer {
-    display: block;
     margin: 10px;
-    padding: 10px;
-    background: #eee;
+    padding: 15px;
+    background: #1a1a2e;
+    border: 2px solid gold;
     cursor: pointer;
+    font-size: 20px;
+    border-radius: 10px;
+    transition: 0.2s;
 }
 
-/* Feedback */
+.answer:hover {
+    background: gold;
+    color: black;
+}
+
+/* ===== FEEDBACK ===== */
 #feedback {
     position: fixed;
     top: 0;
@@ -77,39 +122,50 @@ h1 {
     width: 100%;
     height: 100%;
     display: none;
-    font-size: 60px;
-    color: white;
-    align-items: center;
+    font-size: 80px;
     justify-content: center;
+    align-items: center;
+    text-align: center;
 }
-.correct { background: rgba(0,200,0,0.8); }
-.wrong { background: rgba(200,0,0,0.8); }
+
+.correct {
+    background: rgba(0, 200, 0, 0.9);
+}
+
+.wrong {
+    background: rgba(200, 0, 0, 0.9);
+}
 
 </style>
 </head>
 
 <body>
 
-<h1>🎤 مسابقة الصف 🎤</h1>
+<header>🎤 المسابقة الثقافية 🎤</header>
 
 <div id="scoreboard">
-    <div>الفريق 1: <span id="team1">0</span></div>
-    <div>الفريق 2: <span id="team2">0</span></div>
+    <div id="t1" class="team">الفريق 1: <span>0</span></div>
+    <div id="t2" class="team">الفريق 2: <span>0</span></div>
 </div>
 
 <div class="grid" id="grid"></div>
 
+<!-- POPUP -->
 <div id="popup">
-    <h2 id="question"></h2>
+    <div id="question"></div>
     <div id="answers"></div>
 </div>
 
+<!-- FEEDBACK -->
 <div id="feedback"></div>
 
+<!-- SOUNDS -->
 <audio id="correctSound" src="sounds/correct.mp3"></audio>
 <audio id="wrongSound" src="sounds/wrong.mp3"></audio>
 
 <script>
+
+/* ===== QUESTIONS ===== */
 let questions = [
     {
         question: "ما عاصمة المغرب؟",
@@ -117,55 +173,61 @@ let questions = [
         correct: 1
     },
     {
-        question: "2 + 2 = ؟",
-        options: ["3", "4", "5", "6"],
-        correct: 1
+        question: "5 × 3 = ؟",
+        options: ["15", "10", "20", "8"],
+        correct: 0
     }
 ];
 
+/* ===== GAME STATE ===== */
 let currentTeam = 1;
-let scores = [0,0];
+let scores = [0, 0, 0];
 
 const grid = document.getElementById("grid");
 
-questions.forEach((q, index) => {
+/* ===== CREATE GRID ===== */
+for (let i = 0; i < 15; i++) {
     let box = document.createElement("div");
     box.className = "box";
-    box.innerText = index + 1;
+    box.innerText = i + 1;
 
-    box.onclick = () => openQuestion(index, box);
+    box.onclick = () => openQuestion(i, box);
 
     grid.appendChild(box);
-});
+}
 
+/* ===== OPEN QUESTION ===== */
 function openQuestion(index, box) {
     if (box.classList.contains("used")) return;
 
+    let q = questions[index % questions.length];
+
     document.getElementById("popup").style.display = "block";
-    document.getElementById("question").innerText = questions[index].question;
+    document.getElementById("question").innerText = q.question;
 
     let answersDiv = document.getElementById("answers");
     answersDiv.innerHTML = "";
 
-    questions[index].options.forEach((opt, i) => {
+    q.options.forEach((opt, i) => {
         let btn = document.createElement("div");
         btn.className = "answer";
         btn.innerText = opt;
 
-        btn.onclick = () => checkAnswer(i, questions[index].correct, box);
+        btn.onclick = () => checkAnswer(i, q.correct, box);
 
         answersDiv.appendChild(btn);
     });
 }
 
+/* ===== CHECK ANSWER ===== */
 function checkAnswer(selected, correct, box) {
     document.getElementById("popup").style.display = "none";
 
     let feedback = document.getElementById("feedback");
 
     if (selected === correct) {
-        scores[currentTeam - 1] += 1;
-        document.getElementById("team" + currentTeam).innerText = scores[currentTeam - 1];
+        scores[currentTeam - 1]++;
+        document.querySelector("#t" + currentTeam + " span").innerText = scores[currentTeam - 1];
 
         feedback.className = "correct";
         feedback.innerText = "✔ إجابة صحيحة!";
@@ -184,8 +246,20 @@ function checkAnswer(selected, correct, box) {
 
     box.classList.add("used");
 
-    currentTeam = currentTeam === 1 ? 2 : 1;
+    currentTeam = currentTeam % 3 + 1;
+    updateActiveTeam();
 }
+
+/* ===== ACTIVE TEAM ===== */
+function updateActiveTeam() {
+    for (let i = 1; i <= 3; i++) {
+        document.getElementById("t" + i).classList.remove("active");
+    }
+    document.getElementById("t" + currentTeam).classList.add("active");
+}
+
+updateActiveTeam();
+
 </script>
 
 </body>
